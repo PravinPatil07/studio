@@ -48,6 +48,7 @@ export type Donation = {
 export type ProfileDonationEntry = {
   date: string; // ISO string format
   fulfilledRequestId?: string; // Optional
+  location?: string; // Optional, where the donation took place
   notes?: string; // e.g., "Donated at City Hospital Blood Drive"
 };
 
@@ -99,4 +100,3 @@ export const BADGE_THRESHOLDS: Record<BadgeName, number> = {
   [DONATION_BADGES.LIFE_GUARDIAN]: 5,
   [DONATION_BADGES.COMMUNITY_HERO]: 10,
 };
-

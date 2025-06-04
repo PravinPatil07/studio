@@ -15,7 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth-client";
 import { generateCertificate } from "@/ai/flows/generate-certificate-flow";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { ConfirmDonationDialog, type ConfirmDonationFormValues } from "@/components/dashboard/ConfirmDonationDialog";
 
 const mockRequests: BloodRequest[] = [
   { id: "req1", requesterName: "Aarav Sharma", bloodGroup: "A+", location: "Mumbai, MH", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", urgency: "Urgent", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
@@ -29,7 +30,10 @@ export default function DashboardPage() {
   const { user: firebaseUser } = useAuth();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState<string | null>(null);
+  
+  const [isConfirmDonationDialogOpen, setIsConfirmDonationDialogOpen] = useState(false);
+  const [currentRequestToFulfill, setCurrentRequestToFulfill] = useState<BloodRequest | null>(null);
+  const [isProcessingDonation, setIsProcessingDonation] = useState(false);
 
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export default function DashboardPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleDonate = async (requestId: string) => {
+  const openDonationConfirmation = (request: BloodRequest) => {
     if (!firebaseUser) {
       toast({
         title: "Authentication Error",
@@ -50,57 +54,49 @@ export default function DashboardPage() {
       });
       return;
     }
+    setCurrentRequestToFulfill(request);
+    setIsConfirmDonationDialogOpen(true);
+  };
 
-    const requestToFulfill = requests.find(req => req.id === requestId);
-    if (!requestToFulfill) return;
+  const processConfirmedDonation = async (formData: ConfirmDonationFormValues) => {
+    if (!firebaseUser || !currentRequestToFulfill) {
+      toast({ title: "Error", description: "User or request data missing.", variant: "destructive" });
+      setIsProcessingDonation(false);
+      setIsConfirmDonationDialogOpen(false);
+      return;
+    }
 
-    // Optimistically update UI for request fulfillment
-    setRequests(prevRequests =>
-      prevRequests.map(req =>
-        req.id === requestId ? { ...req, isFulfilled: true } : req
-      )
-    );
-
-    toast({
-      title: "Donation Marked!",
-      description: `Thank you for your commitment to help fulfill request ID: ${requestId}.`,
-      variant: "default",
-    });
-
-    setIsGeneratingCertificate(requestId);
+    setIsProcessingDonation(true);
     toast({
       title: "Processing Donation & Certificate...",
-      description: "Please wait while your donation is recorded and certificate is being created.",
+      description: "Please wait while your donation is recorded.",
     });
 
-    const donationDate = new Date().toISOString();
-    const donationId = `donation-${requestId}-${Date.now()}`;
+    const donationId = `donation-${currentRequestToFulfill.id}-${Date.now()}`;
 
     try {
-      // 1. Update user profile in Firestore (donation count, history, badges)
+      // 1. Update user profile in Firestore
       const userDocRef = doc(db, "users", firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
-      let updatedBadges: BadgeName[] = [];
-
+      
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data() as AppUserType;
         const currentDonationCount = userData.donationCount || 0;
         const newDonationCount = currentDonationCount + 1;
         
-        const currentBadges = userData.badges || [];
-        updatedBadges = [...currentBadges];
-
+        let updatedBadges: BadgeName[] = [...(userData.badges || [])];
         (Object.keys(BADGE_THRESHOLDS) as BadgeName[]).forEach(badgeName => {
-          if (newDonationCount >= BADGE_THRESHOLDS[badgeName] && !currentBadges.includes(badgeName)) {
+          if (newDonationCount >= BADGE_THRESHOLDS[badgeName] && !updatedBadges.includes(badgeName)) {
             updatedBadges.push(badgeName);
             toast({ title: "New Badge Earned!", description: `Congratulations, you've earned the "${badgeName}" badge!`});
           }
         });
 
         const newDonationEntry: ProfileDonationEntry = {
-          date: donationDate,
-          fulfilledRequestId: requestId,
-          notes: `Fulfilled request for ${requestToFulfill.requesterName} (${requestToFulfill.bloodGroup})`,
+          date: formData.donationDate.toISOString(),
+          fulfilledRequestId: currentRequestToFulfill.id,
+          location: formData.donationLocation || undefined,
+          notes: formData.notes || `Fulfilled request for ${currentRequestToFulfill.requesterName} (${currentRequestToFulfill.bloodGroup})`,
         };
         const updatedDonationHistory = [...(userData.donationHistory || []), newDonationEntry];
 
@@ -111,7 +107,6 @@ export default function DashboardPage() {
         });
         toast({ title: "Profile Updated", description: "Your donation count and badges have been updated." });
       } else {
-         // Should ideally not happen if user is logged in and profile was created at signup
         console.warn("User profile not found in Firestore for donation update.");
       }
 
@@ -121,7 +116,7 @@ export default function DashboardPage() {
 
       const certificateResult = await generateCertificate({
         donorName,
-        donationDate,
+        donationDate: formData.donationDate.toISOString(),
         issuingOrganization,
         donationId,
       });
@@ -130,11 +125,11 @@ export default function DashboardPage() {
         id: `cert-${donationId}`,
         userId: firebaseUser.uid,
         donationId: donationId,
-        issueDate: donationDate,
+        issueDate: formData.donationDate.toISOString(),
         certificateUrl: certificateResult.certificateDataUri,
       };
 
-      // Store certificate in localStorage (as per existing pattern, could also be Firestore)
+      // Store certificate in localStorage
       const existingCertsString = localStorage.getItem(`userCertificates_${firebaseUser.uid}`);
       const existingCerts: Certificate[] = existingCertsString ? JSON.parse(existingCertsString) : [];
       localStorage.setItem(`userCertificates_${firebaseUser.uid}`, JSON.stringify([...existingCerts, newCertificate]));
@@ -144,21 +139,24 @@ export default function DashboardPage() {
         description: "Your donation certificate has been successfully created and saved.",
       });
 
+      // Optimistically update UI for request fulfillment
+      setRequests(prevRequests =>
+        prevRequests.map(req =>
+          req.id === currentRequestToFulfill!.id ? { ...req, isFulfilled: true } : req
+        )
+      );
+
     } catch (error) {
       console.error("Failed to process donation or generate certificate:", error);
       toast({
         title: "Error Processing Donation",
-        description: `There was an issue. Please try again later or contact support. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `There was an issue. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
-      // Optionally revert optimistic UI update if backend operations fail critically
-      // setRequests(prevRequests =>
-      //   prevRequests.map(req =>
-      //     req.id === requestId ? { ...req, isFulfilled: false } : req
-      //   )
-      // );
     } finally {
-      setIsGeneratingCertificate(null);
+      setIsProcessingDonation(false);
+      setIsConfirmDonationDialogOpen(false);
+      setCurrentRequestToFulfill(null);
     }
   };
 
@@ -180,8 +178,8 @@ export default function DashboardPage() {
             <DonationRequestCard
               key={request.id}
               request={request}
-              onDonate={handleDonate}
-              isGeneratingCert={isGeneratingCertificate === request.id}
+              onDonate={() => openDonationConfirmation(request)}
+              isGeneratingCert={isProcessingDonation && currentRequestToFulfill?.id === request.id}
             />
           ))}
         </div>
@@ -208,12 +206,25 @@ export default function DashboardPage() {
               <DonationRequestCard
                 key={request.id}
                 request={request}
-                onDonate={handleDonate}
-                isGeneratingCert={isGeneratingCertificate === request.id}
+                onDonate={() => { /* Cannot re-donate fulfilled request */}}
+                isGeneratingCert={false} // Or handle differently if re-generating is possible
               />
             ))}
           </div>
         </>
+      )}
+      {currentRequestToFulfill && (
+        <ConfirmDonationDialog
+          isOpen={isConfirmDonationDialogOpen}
+          onClose={() => {
+            setIsConfirmDonationDialogOpen(false);
+            setCurrentRequestToFulfill(null);
+          }}
+          onSubmit={processConfirmedDonation}
+          isProcessing={isProcessingDonation}
+          initialLocation={currentRequestToFulfill.location}
+          requesterName={currentRequestToFulfill.requesterName}
+        />
       )}
     </div>
   );
