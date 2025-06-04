@@ -67,6 +67,7 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log("SignupForm onSubmit triggered with values:", values); // For debugging
     setError(null);
     setIsLoading(true);
     try {
@@ -75,7 +76,6 @@ export function SignupForm() {
       // This example only handles auth creation.
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       // AuthProvider's onAuthStateChanged will handle redirect.
-      // router.push('/dashboard'); // Explicit redirect is also an option
     } catch (err: any) {
       console.error("Signup error:", err);
       if (err.code === 'auth/email-already-in-use') {

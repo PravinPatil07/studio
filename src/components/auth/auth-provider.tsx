@@ -35,11 +35,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !user && pathname.startsWith('/dashboard')) {
-      router.push('/auth/login');
-    }
-    if (!isLoading && user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
-      router.push('/dashboard');
+    if (!isLoading) {
+      if (!user && pathname.startsWith('/dashboard')) {
+        router.push('/auth/login');
+      } else if (user && (pathname === '/auth/login' || pathname === '/auth/signup' || pathname === '/')) {
+        // If user is logged in and on an auth page or the landing page, redirect to dashboard
+        router.push('/dashboard');
+      }
     }
   }, [user, isLoading, pathname, router]);
 

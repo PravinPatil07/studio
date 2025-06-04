@@ -43,12 +43,12 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log("LoginForm onSubmit triggered with values:", values); // For debugging
     setError(null);
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       // AuthProvider's onAuthStateChanged will handle redirect.
-      // router.push('/dashboard'); // Explicit redirect is also an option
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
