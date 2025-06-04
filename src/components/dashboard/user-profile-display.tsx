@@ -1,3 +1,4 @@
+
 // src/components/dashboard/user-profile-display.tsx
 "use client";
 
@@ -6,23 +7,16 @@ import { Button } from "@/components/ui/button";
 import type { User } from "@/types";
 import { UserCircle, Mail, MapPin, Phone, CalendarDays, Droplet, Edit3 } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast"; // Not needed here anymore for edit
 
 interface UserProfileDisplayProps {
-  user: User | null; // User can be null if not loaded yet
+  user: User | null;
+  onEdit: () => void; // Callback to switch to edit mode
 }
 
-export function UserProfileDisplay({ user }: UserProfileDisplayProps) {
-  const { toast } = useToast();
+export function UserProfileDisplay({ user, onEdit }: UserProfileDisplayProps) {
+  // const { toast } = useToast(); // No longer needed here
 
-  const handleEditProfile = () => {
-    // Mock edit profile action
-    toast({
-      title: "Edit Profile",
-      description: "Profile editing functionality is not yet implemented in this demo.",
-    });
-  };
-  
   if (!user) {
     return (
       <Card className="shadow-xl">
@@ -44,11 +38,11 @@ export function UserProfileDisplay({ user }: UserProfileDisplayProps) {
   }
 
   return (
-    <Card className="max-w-2xl mx-auto shadow-xl">
+    <Card className="shadow-xl">
       <CardHeader className="text-center">
         <UserCircle className="h-24 w-24 text-primary mx-auto mb-4" />
         <CardTitle className="font-headline text-3xl text-primary">{user.firstName} {user.lastName}</CardTitle>
-        <CardDescription className="text-lg">Blood Group: <span className="font-semibold text-accent">{user.bloodGroup}</span></CardDescription>
+        <CardDescription className="text-lg">Blood Group: <span className="font-semibold text-accent">{user.bloodGroup || "N/A"}</span></CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 p-6 sm:p-8">
         <div className="flex items-start space-x-3">
@@ -62,7 +56,7 @@ export function UserProfileDisplay({ user }: UserProfileDisplayProps) {
           <Phone className="h-5 w-5 text-accent mt-1 shrink-0" />
           <div>
             <p className="text-sm text-muted-foreground">Contact Number</p>
-            <p className="font-medium text-foreground">{user.contactNumber}</p>
+            <p className="font-medium text-foreground">{user.contactNumber || "Not set"}</p>
           </div>
         </div>
         <div className="flex items-start space-x-3">
@@ -70,7 +64,7 @@ export function UserProfileDisplay({ user }: UserProfileDisplayProps) {
           <div>
             <p className="text-sm text-muted-foreground">Date of Birth / Age</p>
             <p className="font-medium text-foreground">
-              {format(new Date(user.dateOfBirth), "PPP")} ({user.age} years old)
+              {user.dateOfBirth ? format(new Date(user.dateOfBirth), "PPP") : "Not set"} ({user.age && user.age > 0 ? `${user.age} years old` : "Age not set"})
             </p>
           </div>
         </div>
@@ -78,7 +72,7 @@ export function UserProfileDisplay({ user }: UserProfileDisplayProps) {
           <MapPin className="h-5 w-5 text-accent mt-1 shrink-0" />
           <div>
             <p className="text-sm text-muted-foreground">Address</p>
-            <p className="font-medium text-foreground">{user.address}</p>
+            <p className="font-medium text-foreground">{user.address || "Not set"}</p>
           </div>
         </div>
         
@@ -96,17 +90,18 @@ export function UserProfileDisplay({ user }: UserProfileDisplayProps) {
             </ul>
           </div>
         )}
-         {!user.donationHistory || user.donationHistory.length === 0 && (
+         {(!user.donationHistory || user.donationHistory.length === 0) && (
            <div className="pt-4 border-t text-center">
              <p className="text-muted-foreground italic">No donation history recorded yet.</p>
            </div>
          )}
         <div className="pt-6 text-center">
-          <Button onClick={handleEditProfile} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Edit3 className="mr-2 h-4 w-4" /> Edit Profile (Mock)
+          <Button onClick={onEdit} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 }
+

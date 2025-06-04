@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { UserProfileDisplay } from "@/components/dashboard/user-profile-display";
+import { UserProfileEditForm } from "@/components/dashboard/user-profile-edit-form";
 import { PageHeader } from "@/components/layout/page-header";
 import type { User as AppUserType } from "@/types";
 import { UserCircle, AlertTriangle } from "lucide-react";
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState<AppUserType | null>(null);
   const { user: firebaseUser, isLoading: authIsLoading } = useAuth();
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (!authIsLoading && firebaseUser) {
@@ -23,37 +25,34 @@ export default function ProfilePage() {
           const storedProfile = JSON.parse(storedProfileString);
           setProfileData({
             id: firebaseUser.uid,
-            email: firebaseUser.email || "No email provided", // From Firebase Auth
+            email: firebaseUser.email || "No email provided", 
             firstName: storedProfile.firstName || firebaseUser.displayName?.split(' ')[0] || "User",
             lastName: storedProfile.lastName || firebaseUser.displayName?.split(' ')[1] || "",
             bloodGroup: storedProfile.bloodGroup || "N/A",
             age: storedProfile.age || 0,
-            dateOfBirth: storedProfile.dateOfBirth || new Date().toISOString(), // Fallback, consider better one
+            dateOfBirth: storedProfile.dateOfBirth || new Date(1900,0,1).toISOString(),
             address: storedProfile.address || "No address provided",
             contactNumber: storedProfile.contactNumber || "No contact provided",
-            donationHistory: storedProfile.donationHistory || [], // Assuming donation history might also be stored or fetched elsewhere
+            donationHistory: storedProfile.donationHistory || [],
           });
         } else {
-          // Fallback if no profile in localStorage (e.g., user signed up before this feature)
-          // Or, user logged in via a method that didn't populate localStorage profile (e.g. social login if added later)
            setProfileData({
             id: firebaseUser.uid,
             email: firebaseUser.email || "No email provided",
             firstName: firebaseUser.displayName?.split(' ')[0] || "Donor",
             lastName: firebaseUser.displayName?.split(' ')[1] || "User",
             bloodGroup: "N/A",
-            age: 0, // Consider removing or handling 'unknown' age
-            dateOfBirth: new Date(1900,0,1).toISOString(), // Default to a very past date
+            age: 0,
+            dateOfBirth: new Date(1900,0,1).toISOString(),
             address: "Address not set",
             contactNumber: "Contact not set",
             donationHistory: []
           });
-          setProfileError("Some profile details might be missing. Please consider re-saving your profile if this is your first time here after an update.");
+          setProfileError("Some profile details might be missing or were not previously saved. Please edit and save your profile.");
         }
       } catch (error) {
         console.error("Error loading profile from localStorage:", error);
         setProfileError("Could not load all profile details. Displaying available information.");
-        // Fallback to basic info from firebaseUser if localStorage fails catastrophically
         setProfileData({
           id: firebaseUser.uid,
           email: firebaseUser.email || "Error loading email",
@@ -73,7 +72,17 @@ export default function ProfilePage() {
     }
   }, [firebaseUser, authIsLoading]);
 
+  const handleEdit = () => setIsEditing(true);
+  
+  const handleSave = (updatedData: AppUserType) => {
+    setProfileData(updatedData);
+    setIsEditing(false);
+  };
+  
+  const handleCancel = () => setIsEditing(false);
+
   if (authIsLoading || (firebaseUser && !profileData && !profileError)) {
+    // Skeleton loading state
     return (
       <div>
         <PageHeader 
@@ -112,7 +121,6 @@ export default function ProfilePage() {
   }
   
   if (!firebaseUser && !authIsLoading) {
-    // Should be redirected by AppLayout, but as a safeguard:
     return (
         <div className="text-center py-10">
             <p>Please log in to view your profile.</p>
@@ -120,16 +128,15 @@ export default function ProfilePage() {
     );
   }
 
-
   return (
     <div>
       <PageHeader 
-        title="Your Profile" 
-        description="View and manage your personal information and donation history."
+        title={isEditing ? "Edit Profile" : "Your Profile"}
+        description={isEditing ? "Update your personal information below." : "View and manage your personal information and donation history."}
         icon={UserCircle} 
       />
-      {profileError && (
-         <div className="max-w-2xl mx-auto mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+      {profileError && !isEditing && (
+         <div className="max-w-2xl mx-auto mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md">
             <div className="flex">
                 <div className="py-1"><AlertTriangle className="h-5 w-5 text-yellow-500 mr-3" /></div>
                 <div>
@@ -139,13 +146,25 @@ export default function ProfilePage() {
             </div>
         </div>
       )}
-      <UserProfileDisplay user={profileData} />
+      
+      <div className="max-w-2xl mx-auto">
+        {isEditing && profileData ? (
+          <UserProfileEditForm 
+            currentUserData={profileData} 
+            onSave={handleSave} 
+            onCancel={handleCancel} 
+          />
+        ) : profileData ? (
+          <UserProfileDisplay user={profileData} onEdit={handleEdit} />
+        ) : (
+           <p className="text-center text-muted-foreground">Could not load profile data.</p>
+        )}
+      </div>
     </div>
   );
 }
 
-// Dummy Card and other components used by Skeleton in ProfilePage for completeness of thought
-const Card = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={className}>{children}</div>;
-const CardHeader = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={className}>{children}</div>;
-const CardContent = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={className}>{children}</div>;
-
+// Dummy Card components used by Skeleton, ensure they exist or are styled if not using shadcn full
+const Card = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`bg-card text-card-foreground border rounded-lg ${className}`}>{children}</div>;
+const CardHeader = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`p-6 ${className}`}>{children}</div>;
+const CardContent = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
