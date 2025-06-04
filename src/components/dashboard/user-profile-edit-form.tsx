@@ -23,9 +23,9 @@ import { format, differenceInYears } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { bloodGroupsList, type BloodGroup, type User as AppUserType } from "@/types";
-import { auth, db } from "@/lib/firebase"; // Import db
+import { auth, db } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore"; // Import Firestore functions
+import { doc, setDoc } from "firebase/firestore";
 import { useState } from "react";
 
 const editProfileFormSchema = z.object({
@@ -55,8 +55,8 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
     defaultValues: {
       firstName: currentUserData.firstName,
       lastName: currentUserData.lastName,
-      bloodGroup: currentUserData.bloodGroup as BloodGroup, // Cast if necessary, ensure it's a valid BloodGroup
-      dateOfBirth: currentUserData.dateOfBirth ? new Date(currentUserData.dateOfBirth) : new Date(),
+      bloodGroup: currentUserData.bloodGroup as BloodGroup,
+      dateOfBirth: currentUserData.dateOfBirth ? new Date(currentUserData.dateOfBirth) : new Date(1990, 0, 1),
       address: currentUserData.address,
       contactNumber: currentUserData.contactNumber,
     },
@@ -78,23 +78,27 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
       }
 
       const age = differenceInYears(new Date(), values.dateOfBirth);
+
+      // Preserve existing fields like id, email, donationHistory, donationCount, badges
+      // and only update the fields managed by this form.
       const updatedFirestoreData: AppUserType = {
-        ...currentUserData, // Preserve existing fields like id, email, donationHistory
+        ...currentUserData, // This carries over id, email, and all non-form fields
         firstName: values.firstName,
         lastName: values.lastName,
         bloodGroup: values.bloodGroup,
         dateOfBirth: values.dateOfBirth.toISOString(),
-        age: age,
+        age: age, // Recalculate age based on new DOB
         address: values.address,
         contactNumber: values.contactNumber,
+        // donationCount, badges, and donationHistory are managed elsewhere (e.g., on donation)
+        // and are preserved by spreading currentUserData.
       };
-      
-      // Save/Update profile data in Firestore
+
       const userDocRef = doc(db, "users", firebaseUser.uid);
-      await setDoc(userDocRef, updatedFirestoreData, { merge: true }); // Use merge to prevent overwriting if doc exists
-      
-      onSave(updatedFirestoreData); // Pass updated data to parent to update local state
-      toast({ title: "Profile Updated", description: "Your profile has been successfully updated in Firestore." });
+      await setDoc(userDocRef, updatedFirestoreData, { merge: true }); // Use merge to update only specified fields
+
+      onSave(updatedFirestoreData);
+      toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
 
     } catch (error: any) {
       console.error("Error updating profile:", error);
@@ -139,7 +143,7 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
             )}
           />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -242,4 +246,3 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
     </Form>
   );
 }
-

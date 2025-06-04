@@ -30,7 +30,7 @@ import { auth, db } from "@/lib/firebase"; // Import db
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore"; // Import Firestore functions
 import { useRouter } from "next/navigation";
-import { bloodGroupsList, type BloodGroup, type User as AppUserType } from "@/types"; 
+import { bloodGroupsList, type BloodGroup, type User as AppUserType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -62,8 +62,8 @@ export function SignupForm() {
       email: "",
       firstName: "",
       lastName: "",
-      bloodGroup: undefined, 
-      age: undefined, 
+      bloodGroup: undefined,
+      age: undefined,
       dateOfBirth: undefined,
       address: "",
       contactNumber: "",
@@ -94,17 +94,19 @@ export function SignupForm() {
         address: values.address,
         contactNumber: values.contactNumber,
         donationHistory: [], // Initialize donation history
+        donationCount: 0, // Initialize donation count
+        badges: [], // Initialize badges
       };
 
       // Save profile data to Firestore
       await setDoc(doc(db, "users", firebaseUser.uid), userProfileData);
-      
+
       toast({
         title: "Account Created!",
         description: "Your account has been successfully created. Redirecting to dashboard...",
       });
       // AuthProvider's onAuthStateChanged will handle redirect.
-      
+
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError("This email is already registered. Please log in or use a different email.");
@@ -115,7 +117,7 @@ export function SignupForm() {
         console.error("Firestore permission error during signup:", err);
       }
       else {
-        console.error("Unexpected signup error:", err); 
+        console.error("Unexpected signup error:", err);
         setError("An unexpected error occurred during sign up. Please try again.");
       }
     } finally {
@@ -127,7 +129,7 @@ export function SignupForm() {
     <Card className="w-full max-w-lg shadow-xl">
       <CardHeader>
         <CardTitle className="font-headline text-3xl text-primary">Create Your Account</CardTitle>
-        <CardDescription>Join Blood Donation App and start saving lives today.</CardDescription>
+        <CardDescription>Join LifeFlow App and start saving lives today.</CardDescription>
       </CardHeader>
       <CardContent>
         {error && (
@@ -319,4 +321,3 @@ export function SignupForm() {
     </Card>
   );
 }
-

@@ -11,7 +11,9 @@ export type User = {
   dateOfBirth: string; // ISO string format
   address: string;
   contactNumber: string;
-  donationHistory?: Donation[];
+  donationHistory: ProfileDonationEntry[]; // Made non-optional
+  donationCount: number; // New field
+  badges: string[]; // New field - stores names of earned badges
 };
 
 export const urgencyLevels = ["Urgent", "Moderate", "Low"] as const;
@@ -27,17 +29,27 @@ export type BloodRequest = {
   urgency: UrgencyLevel;
   isFulfilled: boolean;
   createdAt: string; // ISO string format
-  requestedByUserId?: string; 
+  requestedByUserId?: string;
 };
 
+// Full donation record (could be stored in a separate "donations" collection if more detail is needed)
 export type Donation = {
   id: string;
-  donorId: string;
-  recipientRequestId?: string; // Optional, if donation fulfills a specific request
-  dateOfDonation: string; // ISO string format
+  userId: string; // The user who donated
+  donationDate: string; // ISO string format
   quantity?: string; // e.g., "1 unit", "450ml"
+  fulfilledRequestId?: string; // Optional, if donation fulfills a specific request
   certificateId?: string;
+  notes?: string;
 };
+
+// Simplified entry for user's profile donation history
+export type ProfileDonationEntry = {
+  date: string; // ISO string format
+  fulfilledRequestId?: string; // Optional
+  notes?: string; // e.g., "Donated at City Hospital Blood Drive"
+};
+
 
 export type Certificate = {
   id: string;
@@ -70,3 +82,19 @@ export const bloodCompatibilityInfo: Record<BloodGroup, { canDonateTo: BloodGrou
   "O-": { canDonateTo: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], canReceiveFrom: ["O-"] }, // Universal donor
 };
 
+// Badge definitions
+export const DONATION_BADGES = {
+  FIRST_BLOOD_DROP: "First Blood Drop", // 1 donation
+  HELPING_HAND: "Helping Hand",       // 3 donations
+  LIFE_GUARDIAN: "Life Guardian",       // 5 donations
+  COMMUNITY_HERO: "Community Hero",     // 10 donations
+} as const;
+
+export type BadgeName = typeof DONATION_BADGES[keyof typeof DONATION_BADGES];
+
+export const BADGE_THRESHOLDS: Record<BadgeName, number> = {
+  [DONATION_BADGES.FIRST_BLOOD_DROP]: 1,
+  [DONATION_BADGES.HELPING_HAND]: 3,
+  [DONATION_BADGES.LIFE_GUARDIAN]: 5,
+  [DONATION_BADGES.COMMUNITY_HERO]: 10,
+};

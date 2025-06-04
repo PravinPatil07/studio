@@ -1,10 +1,12 @@
+
 // src/app/(app)/dashboard/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { DonationRequestCard } from "@/components/dashboard/donation-request-card";
 import { PageHeader } from "@/components/layout/page-header";
-import type { BloodRequest, Certificate } from "@/types";
+import type { BloodRequest, Certificate, User as AppUserType, ProfileDonationEntry, BadgeName } from "@/types";
+import { DONATION_BADGES, BADGE_THRESHOLDS } from "@/types";
 import { Home, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -12,12 +14,14 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth-client";
 import { generateCertificate } from "@/ai/flows/generate-certificate-flow";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 const mockRequests: BloodRequest[] = [
-  { id: "1", requesterName: "Priya Sharma", bloodGroup: "A+", location: "Mumbai, MH", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", urgency: "Urgent", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "2", requesterName: "Rohan Patel", bloodGroup: "O-", location: "Delhi, DL", dateNeeded: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-5678", urgency: "Moderate", isFulfilled: false, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "3", requesterName: "Ananya Reddy", bloodGroup: "B+", location: "Bangalore, KA", dateNeeded: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-9012", urgency: "Low", isFulfilled: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "4", requesterName: "Vikram Singh", bloodGroup: "AB+", location: "Chennai, TN", dateNeeded: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-3456", urgency: "Moderate", isFulfilled: false, createdAt: new Date().toISOString() },
+  { id: "req1", requesterName: "Aarav Sharma", bloodGroup: "A+", location: "Mumbai, MH", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", urgency: "Urgent", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "req2", requesterName: "Diya Patel", bloodGroup: "O-", location: "Delhi, DL", dateNeeded: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-5678", urgency: "Moderate", isFulfilled: false, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "req3", requesterName: "Ishaan Reddy", bloodGroup: "B+", location: "Bangalore, KA", dateNeeded: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-9012", urgency: "Low", isFulfilled: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "req4", requesterName: "Myra Singh", bloodGroup: "AB+", location: "Chennai, TN", dateNeeded: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-3456", urgency: "Moderate", isFulfilled: false, createdAt: new Date().toISOString() },
 ];
 
 export default function DashboardPage() {
@@ -50,13 +54,13 @@ export default function DashboardPage() {
     const requestToFulfill = requests.find(req => req.id === requestId);
     if (!requestToFulfill) return;
 
-    // Optimistically update UI
+    // Optimistically update UI for request fulfillment
     setRequests(prevRequests =>
       prevRequests.map(req =>
         req.id === requestId ? { ...req, isFulfilled: true } : req
       )
     );
-    
+
     toast({
       title: "Donation Marked!",
       description: `Thank you for your commitment to help fulfill request ID: ${requestId}.`,
@@ -65,15 +69,55 @@ export default function DashboardPage() {
 
     setIsGeneratingCertificate(requestId);
     toast({
-      title: "Generating Certificate...",
-      description: "Please wait while your donation certificate is being created.",
+      title: "Processing Donation & Certificate...",
+      description: "Please wait while your donation is recorded and certificate is being created.",
     });
 
+    const donationDate = new Date().toISOString();
+    const donationId = `donation-${requestId}-${Date.now()}`;
+
     try {
+      // 1. Update user profile in Firestore (donation count, history, badges)
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      let updatedBadges: BadgeName[] = [];
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data() as AppUserType;
+        const currentDonationCount = userData.donationCount || 0;
+        const newDonationCount = currentDonationCount + 1;
+        
+        const currentBadges = userData.badges || [];
+        updatedBadges = [...currentBadges];
+
+        (Object.keys(BADGE_THRESHOLDS) as BadgeName[]).forEach(badgeName => {
+          if (newDonationCount >= BADGE_THRESHOLDS[badgeName] && !currentBadges.includes(badgeName)) {
+            updatedBadges.push(badgeName);
+            toast({ title: "New Badge Earned!", description: `Congratulations, you've earned the "${badgeName}" badge!`});
+          }
+        });
+
+        const newDonationEntry: ProfileDonationEntry = {
+          date: donationDate,
+          fulfilledRequestId: requestId,
+          notes: `Fulfilled request for ${requestToFulfill.requesterName} (${requestToFulfill.bloodGroup})`,
+        };
+        const updatedDonationHistory = [...(userData.donationHistory || []), newDonationEntry];
+
+        await updateDoc(userDocRef, {
+          donationCount: newDonationCount,
+          donationHistory: updatedDonationHistory,
+          badges: updatedBadges,
+        });
+        toast({ title: "Profile Updated", description: "Your donation count and badges have been updated." });
+      } else {
+         // Should ideally not happen if user is logged in and profile was created at signup
+        console.warn("User profile not found in Firestore for donation update.");
+      }
+
+      // 2. Generate Certificate
       const donorName = firebaseUser.displayName || firebaseUser.email || "Valued Donor";
-      const donationDate = new Date().toISOString();
-      const issuingOrganization = "LifeFlow App Services"; // Updated App Name
-      const donationId = `donation-${requestId}-${Date.now()}`;
+      const issuingOrganization = "LifeFlow App Services";
 
       const certificateResult = await generateCertificate({
         donorName,
@@ -85,45 +129,45 @@ export default function DashboardPage() {
       const newCertificate: Certificate = {
         id: `cert-${donationId}`,
         userId: firebaseUser.uid,
-        donationId: donationId, 
+        donationId: donationId,
         issueDate: donationDate,
         certificateUrl: certificateResult.certificateDataUri,
       };
 
-      // Store in localStorage
+      // Store certificate in localStorage (as per existing pattern, could also be Firestore)
       const existingCertsString = localStorage.getItem(`userCertificates_${firebaseUser.uid}`);
       const existingCerts: Certificate[] = existingCertsString ? JSON.parse(existingCertsString) : [];
       localStorage.setItem(`userCertificates_${firebaseUser.uid}`, JSON.stringify([...existingCerts, newCertificate]));
-      
+
       toast({
         title: "Certificate Generated!",
         description: "Your donation certificate has been successfully created and saved.",
       });
 
     } catch (error) {
-      console.error("Failed to generate certificate:", error);
+      console.error("Failed to process donation or generate certificate:", error);
       toast({
-        title: "Certificate Generation Failed",
-        description: `Could not generate certificate for donation ${requestId}. Please try again later or contact support. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: "Error Processing Donation",
+        description: `There was an issue. Please try again later or contact support. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
-      // Optionally revert optimistic update if certificate generation is critical
+      // Optionally revert optimistic UI update if backend operations fail critically
       // setRequests(prevRequests =>
       //   prevRequests.map(req =>
-      //     req.id === requestId ? { ...req, isFulfilled: false } : req 
+      //     req.id === requestId ? { ...req, isFulfilled: false } : req
       //   )
       // );
     } finally {
       setIsGeneratingCertificate(null);
     }
   };
-  
+
   const pendingRequests = requests.filter(req => !req.isFulfilled);
 
   return (
     <div>
       <PageHeader title="Dashboard" description="View active blood donation requests." icon={Home} />
-      
+
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => (
@@ -133,9 +177,9 @@ export default function DashboardPage() {
       ) : pendingRequests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pendingRequests.map((request) => (
-            <DonationRequestCard 
-              key={request.id} 
-              request={request} 
+            <DonationRequestCard
+              key={request.id}
+              request={request}
               onDonate={handleDonate}
               isGeneratingCert={isGeneratingCertificate === request.id}
             />
@@ -161,10 +205,10 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-headline font-semibold text-primary mt-12 mb-6">Fulfilled Requests</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {requests.filter(req => req.isFulfilled).map((request) => (
-              <DonationRequestCard 
-                key={request.id} 
-                request={request} 
-                onDonate={handleDonate} // Or a different handler for already fulfilled ones
+              <DonationRequestCard
+                key={request.id}
+                request={request}
+                onDonate={handleDonate}
                 isGeneratingCert={isGeneratingCertificate === request.id}
               />
             ))}
@@ -185,7 +229,7 @@ function CardSkeleton() {
         </div>
         <Skeleton className="h-6 w-20" />
       </div>
-      <Skeleton className="h-5 w-24 mb-3" /> 
+      <Skeleton className="h-5 w-24 mb-3" />
       <div className="space-y-3 mb-4">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />

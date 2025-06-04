@@ -42,13 +42,20 @@ export default function ProfilePage() {
         const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {
-          setProfileData(userDocSnap.data() as AppUserType);
+          const data = userDocSnap.data() as AppUserType;
+          // Ensure all fields, including new ones, have default values if missing
+          setProfileData({
+            ...data,
+            donationCount: data.donationCount || 0,
+            badges: data.badges || [],
+            donationHistory: data.donationHistory || [],
+          });
         } else {
           // Document doesn't exist, create a default profile structure to be saved later
           const defaultFirstName = firebaseUser.displayName?.split(' ')[0] || "User";
           const defaultLastName = firebaseUser.displayName?.split(' ')[1] || "";
-          
-          setProfileData({
+
+          const defaultProfile: AppUserType = {
             id: firebaseUser.uid,
             email: firebaseUser.email || "No email provided",
             firstName: defaultFirstName,
@@ -59,8 +66,13 @@ export default function ProfilePage() {
             address: "No address provided",
             contactNumber: "No contact provided",
             donationHistory: [],
-          });
+            donationCount: 0,
+            badges: [],
+          };
+          setProfileData(defaultProfile);
           setProfileError("Your profile is not fully set up. Please complete and save it.");
+          // Optionally, save this default profile to Firestore immediately
+          // await setDoc(userDocRef, defaultProfile);
         }
       } catch (error) {
         console.error("Error fetching profile from Firestore:", error);
@@ -77,6 +89,8 @@ export default function ProfilePage() {
             address: "Error loading address",
             contactNumber: "Error loading contact",
             donationHistory: [],
+            donationCount: 0,
+            badges: [],
           });
       } finally {
         setIsProfileLoading(false);
@@ -87,29 +101,42 @@ export default function ProfilePage() {
   }, [firebaseUser, authIsLoading]);
 
   const handleEdit = () => setIsEditing(true);
-  
+
   const handleSave = (updatedData: AppUserType) => {
-    // Firestore saving is now handled by UserProfileEditForm
-    // This callback is mainly for updating the local state to refresh UI
-    setProfileData(updatedData);
+    setProfileData(updatedData); // Update local state with data from Firestore (via form)
     setIsEditing(false);
-    setProfileError(null); // Clear any "profile not fully set up" error
+    setProfileError(null);
   };
-  
+
   const handleCancel = () => {
     setIsEditing(false);
-    // Optionally, re-fetch from Firestore if changes were discarded to ensure consistency
-    // but for now, just toggle edit mode. The displayed data will be `profileData`.
+    // Re-fetch profile to discard any optimistic changes or unsaved form state
+     if (firebaseUser) {
+      const fetchProfileOnCancel = async () => {
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+           const data = userDocSnap.data() as AppUserType;
+            setProfileData({
+                ...data,
+                donationCount: data.donationCount || 0,
+                badges: data.badges || [],
+                donationHistory: data.donationHistory || [],
+            });
+        }
+      };
+      fetchProfileOnCancel();
+    }
   };
 
   if (authIsLoading || isProfileLoading) {
     // Skeleton loading state
     return (
       <div>
-        <PageHeader 
-          title="Your Profile" 
+        <PageHeader
+          title="Your Profile"
           description="View and manage your personal information and donation history."
-          icon={UserCircle} 
+          icon={UserCircle}
         />
         <Card className="max-w-2xl mx-auto shadow-xl">
           <CardHeader className="text-center">
@@ -140,7 +167,7 @@ export default function ProfilePage() {
       </div>
     );
   }
-  
+
   if (!firebaseUser && !authIsLoading) {
     return (
         <div className="text-center py-10">
@@ -151,10 +178,10 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader 
+      <PageHeader
         title={isEditing ? "Edit Profile" : "Your Profile"}
         description={isEditing ? "Update your personal information below." : "View and manage your personal information and donation history."}
-        icon={UserCircle} 
+        icon={UserCircle}
       />
       {profileError && !isEditing && (
          <div className="max-w-2xl mx-auto mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md">
@@ -167,13 +194,13 @@ export default function ProfilePage() {
             </div>
         </div>
       )}
-      
+
       <div className="max-w-2xl mx-auto">
         {isEditing && profileData ? (
-          <UserProfileEditForm 
-            currentUserData={profileData} 
-            onSave={handleSave} 
-            onCancel={handleCancel} 
+          <UserProfileEditForm
+            currentUserData={profileData}
+            onSave={handleSave}
+            onCancel={handleCancel}
           />
         ) : profileData ? (
           <UserProfileDisplay user={profileData} onEdit={handleEdit} />
@@ -189,4 +216,3 @@ export default function ProfilePage() {
 const Card = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`bg-card text-card-foreground border rounded-lg ${className}`}>{children}</div>;
 const CardHeader = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`p-6 ${className}`}>{children}</div>;
 const CardContent = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
-
