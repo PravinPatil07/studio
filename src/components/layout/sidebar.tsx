@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusSquare, Search, Info, Zap, Award, UserCircle, LogOut, Droplet } from "lucide-react";
+import { Home, PlusSquare, Search, Info, Zap, Award, UserCircle, LogOut, Trophy } from "lucide-react"; // Added Trophy
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth-client";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/request-blood", label: "Request Blood", icon: PlusSquare },
   { href: "/dashboard/find-donor", label: "Find Donor", icon: Search },
+  { href: "/dashboard/achievements", label: "Achievements", icon: Trophy }, // Added Achievements
   { href: "/dashboard/blood-info", label: "Blood Info", icon: Info },
   { href: "/dashboard/ai-guidance", label: "AI Guidance", icon: Zap },
   { href: "/dashboard/certificates", label: "Certificates", icon: Award },

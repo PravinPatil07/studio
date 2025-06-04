@@ -11,9 +11,10 @@ export type User = {
   dateOfBirth: string; // ISO string format
   address: string;
   contactNumber: string;
-  donationHistory: ProfileDonationEntry[]; // Made non-optional
-  donationCount: number; // New field
-  badges: string[]; // New field - stores names of earned badges
+  donationHistory: ProfileDonationEntry[];
+  donationCount: number;
+  badges: BadgeName[]; // Changed from string[] to BadgeName[]
+  healthConsiderations?: string; // Added for AI guidance
 };
 
 export const urgencyLevels = ["Urgent", "Moderate", "Low"] as const;
@@ -98,3 +99,4 @@ export const BADGE_THRESHOLDS: Record<BadgeName, number> = {
   [DONATION_BADGES.LIFE_GUARDIAN]: 5,
   [DONATION_BADGES.COMMUNITY_HERO]: 10,
 };
+
