@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/components/auth/auth-provider';
 
 export const metadata: Metadata = {
-  title: 'LifeFlow - Blood Donation App',
+  title: 'Blood Donation App',
   description: 'Connecting blood donors with recipients to save lives.',
 };
 

@@ -95,7 +95,7 @@ export function SignupForm() {
     <Card className="w-full max-w-lg shadow-xl">
       <CardHeader>
         <CardTitle className="font-headline text-3xl text-primary">Create Your Account</CardTitle>
-        <CardDescription>Join LifeFlow and start saving lives today.</CardDescription>
+        <CardDescription>Join Blood Donation App and start saving lives today.</CardDescription>
       </CardHeader>
       <CardContent>
         {error && (

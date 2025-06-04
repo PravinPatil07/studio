@@ -29,7 +29,7 @@ export default function LandingPage() {
               Donate Blood, Save Lives
             </h1>
             <p className="text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto mb-8">
-              LifeFlow connects compassionate donors with those in urgent need. Join our community and make a difference today.
+              Blood Donation App connects compassionate donors with those in urgent need. Join our community and make a difference today.
             </p>
             <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
               <Link href="/auth/signup">Get Started</Link>
@@ -50,7 +50,7 @@ export default function LandingPage() {
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl sm:text-4xl font-headline font-semibold text-center text-primary mb-12">
-              How LifeFlow Works
+              How Blood Donation App Works
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <Card className="shadow-lg hover:shadow-xl transition-shadow">
@@ -99,7 +99,7 @@ export default function LandingPage() {
         <section className="py-16 md:py-24 bg-muted/50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl sm:text-4xl font-headline font-semibold text-primary mb-6">
-              Join the LifeFlow Community
+              Join the Blood Donation App Community
             </h2>
             <p className="text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto mb-8">
               Every drop counts. Your contribution can bring hope and save lives. Register as a donor or request blood when in need.
@@ -120,7 +120,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Logo className="justify-center mb-2" />
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} LifeFlow. All rights reserved.
+            &copy; {new Date().getFullYear()} Blood Donation App. All rights reserved.
           </p>
         </div>
       </footer>

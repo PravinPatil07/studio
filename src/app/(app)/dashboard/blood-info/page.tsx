@@ -7,7 +7,7 @@ import { Info, Droplet } from "lucide-react";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Blood Group Information - LifeFlow',
+  title: 'Blood Group Information - Blood Donation App',
   description: 'Learn about blood group compatibility for donations and transfusions.',
 };
 

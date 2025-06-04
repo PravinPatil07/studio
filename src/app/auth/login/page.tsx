@@ -3,8 +3,8 @@ import { LoginForm } from "@/components/auth/login-form";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Login - LifeFlow',
-  description: 'Log in to your LifeFlow account.',
+  title: 'Login - Blood Donation App',
+  description: 'Log in to your Blood Donation App account.',
 };
 
 export default function LoginPage() {

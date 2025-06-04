@@ -65,7 +65,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md shadow-xl">
       <CardHeader>
         <CardTitle className="font-headline text-3xl text-primary">Welcome Back</CardTitle>
-        <CardDescription>Log in to your LifeFlow account.</CardDescription>
+        <CardDescription>Log in to your Blood Donation App account.</CardDescription>
       </CardHeader>
       <CardContent>
         {error && (

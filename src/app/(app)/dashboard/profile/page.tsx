@@ -20,7 +20,7 @@ export default function ProfilePage() {
       // In a real app, you'd fetch these additional details from your database (e.g., Firestore)
       // using firebaseUser.uid as the key.
       const mockUserDetails: Omit<AppUserType, 'id' | 'email'> = {
-        firstName: firebaseUser.displayName?.split(' ')[0] || "LifeFlow", // Attempt to get from Firebase, or default
+        firstName: firebaseUser.displayName?.split(' ')[0] || "Donor", // Attempt to get from Firebase, or default
         lastName: firebaseUser.displayName?.split(' ')[1] || "User", // Attempt to get from Firebase, or default
         bloodGroup: "O+", 
         age: 30, 

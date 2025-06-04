@@ -5,8 +5,8 @@ import { PlusSquare } from "lucide-react";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Request Blood - LifeFlow',
-  description: 'Submit a new blood request to the LifeFlow community.',
+  title: 'Request Blood - Blood Donation App',
+  description: 'Submit a new blood request to the Blood Donation App community.',
 };
 
 export default function RequestBloodPage() {
