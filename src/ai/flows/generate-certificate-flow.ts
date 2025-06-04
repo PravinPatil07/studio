@@ -53,16 +53,16 @@ const generateCertificateFlow = ai.defineFlow(
     const formattedDonationDate = format(new Date(donationDate), 'MMMM dd, yyyy');
 
     const prompt = `Generate an image for a blood donation certificate with the following details and style:
-- Title: "BLOOD DONATION CERTIFICATE" in a prominent, elegant, dark red or maroon font.
+- Title: "BLOOD DONATION CERTIFICATE" in a prominent, elegant, dark red or maroon font (close to #C70039).
 - Award Text: "This certificate is awarded to" in a smaller, standard font.
-- Donor Name: "${donorName}" displayed in a large, bold, centered, dark red or maroon font below the award text.
+- Donor Name: "${donorName}" displayed in a large, bold, centered, dark red or maroon font (close to #C70039) below the award text.
 - Main Message: "to honor their selfless act of donating blood, which has helped save lives and bring hope to those in need." in a standard font below the donor's name.
-- Date Text: "Given on this day, ${formattedDonationDate}." in a dark red or maroon font.
-- Issuing Organization: "${issuingOrganization}" placed in the bottom right corner, in a smaller, dark red or maroon font.
-- Seal/Badge: Include a circular, rosette-style seal or badge graphic, primarily gold and red, in the bottom left corner.
-- Design Accents: Incorporate modern, clean geometric shapes or bands in shades of red and dark red in the top-left and bottom-right corners of the certificate. The overall background should be white or very light cream.
-- Overall Style: The certificate should look formal, appreciative, and professional. Use clear, legible fonts.
-- Aspect Ratio: The image should be in a landscape orientation, suitable for a certificate (e.g., 4:3 or similar).
+- Date Text: "Given on this day, ${formattedDonationDate}." in a dark red or maroon font (close to #C70039).
+- Issuing Organization: "${issuingOrganization}" placed in the bottom right corner, in a smaller, dark red or maroon font (close to #C70039).
+- Seal/Badge: Include a circular, rosette-style seal or badge graphic, primarily gold and deep red (#C70039), in the bottom left corner. It should look official.
+- Design Accents: Incorporate modern, clean geometric shapes or bands in shades of deep red (#C70039) and a slightly darker red (e.g., maroon) in the top-left and bottom-right corners of the certificate. The overall background should be white or very light cream/light gray (#F0F0F0).
+- Overall Style: The certificate should look formal, appreciative, and professional. Use clear, legible fonts. The primary color #C70039 should be evident.
+- Aspect Ratio: The image should be in a landscape orientation, suitable for a certificate (e.g., 4:3 or similar, like 1200x900 pixels).
 - Do not include any placeholder text like "[Donor Name]" or "[Date]". Use the actual values provided.
 `;
 

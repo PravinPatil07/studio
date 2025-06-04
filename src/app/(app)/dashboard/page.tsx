@@ -1,5 +1,3 @@
-
-
 // src/app/(app)/dashboard/page.tsx
 "use client";
 
@@ -16,10 +14,10 @@ import { useAuth } from "@/hooks/use-auth-client";
 import { generateCertificate } from "@/ai/flows/generate-certificate-flow";
 
 const mockRequests: BloodRequest[] = [
-  { id: "1", requesterName: "Alice Smith", bloodGroup: "A+", location: "Springfield, IL", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", urgency: "Urgent", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "2", requesterName: "Bob Johnson", bloodGroup: "O-", location: "Shelbyville, IL", dateNeeded: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-5678", urgency: "Moderate", isFulfilled: false, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "3", requesterName: "Carol Williams", bloodGroup: "B+", location: "Capital City, IL", dateNeeded: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-9012", urgency: "Low", isFulfilled: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "4", requesterName: "David Brown", bloodGroup: "AB+", location: "Ogdenville, IL", dateNeeded: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-3456", urgency: "Moderate", isFulfilled: false, createdAt: new Date().toISOString() },
+  { id: "1", requesterName: "Priya Sharma", bloodGroup: "A+", location: "Mumbai, MH", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", urgency: "Urgent", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "2", requesterName: "Rohan Patel", bloodGroup: "O-", location: "Delhi, DL", dateNeeded: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-5678", urgency: "Moderate", isFulfilled: false, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "3", requesterName: "Ananya Reddy", bloodGroup: "B+", location: "Bangalore, KA", dateNeeded: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-9012", urgency: "Low", isFulfilled: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "4", requesterName: "Vikram Singh", bloodGroup: "AB+", location: "Chennai, TN", dateNeeded: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-3456", urgency: "Moderate", isFulfilled: false, createdAt: new Date().toISOString() },
 ];
 
 export default function DashboardPage() {
@@ -74,7 +72,7 @@ export default function DashboardPage() {
     try {
       const donorName = firebaseUser.displayName || firebaseUser.email || "Valued Donor";
       const donationDate = new Date().toISOString();
-      const issuingOrganization = "Blood Donation App Services";
+      const issuingOrganization = "LifeFlow App Services"; // Updated App Name
       const donationId = `donation-${requestId}-${Date.now()}`;
 
       const certificateResult = await generateCertificate({
@@ -197,5 +195,3 @@ function CardSkeleton() {
     </div>
   );
 }
-
-

@@ -10,11 +10,11 @@ import { Search, Users, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const mockDonors: DonorSearchResult[] = [
-  { id: "d1", name: "John Donor", bloodGroup: "A+", city: "Springfield", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "d2", name: "Jane Giver", bloodGroup: "O-", city: "Shelbyville", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "d3", name: "Mike Contributor", bloodGroup: "B+", city: "Springfield", contactInfo: "Available" },
-  { id: "d4", name: "Sarah Helper", bloodGroup: "AB+", city: "Capital City", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "d5", name: "Chris Lifesaver", bloodGroup: "A-", city: "Springfield", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d1", name: "Arjun Kumar", bloodGroup: "A+", city: "Mumbai", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d2", name: "Sneha Reddy", bloodGroup: "O-", city: "Delhi", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d3", name: "Mohan Gupta", bloodGroup: "B+", city: "Mumbai", contactInfo: "Available" },
+  { id: "d4", name: "Lakshmi Iyer", bloodGroup: "AB+", city: "Bangalore", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d5", name: "Ravi Shankar", bloodGroup: "A-", city: "Mumbai", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString() },
 ];
 
 interface SearchFilters {
@@ -105,4 +105,3 @@ function DonorCardSkeleton() {
     </div>
   );
 }
-
