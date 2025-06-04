@@ -1,15 +1,18 @@
+
 // src/app/(app)/dashboard/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { DonationRequestCard } from "@/components/dashboard/donation-request-card";
 import { PageHeader } from "@/components/layout/page-header";
-import type { BloodRequest } from "@/types";
+import type { BloodRequest, Certificate } from "@/types";
 import { Home, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth-client";
+import { generateCertificate } from "@/ai/flows/generate-certificate-flow";
 
 const mockRequests: BloodRequest[] = [
   { id: "1", requesterName: "Alice Smith", bloodGroup: "A+", location: "Springfield, IL", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
@@ -20,8 +23,11 @@ const mockRequests: BloodRequest[] = [
 
 export default function DashboardPage() {
   const { toast } = useToast();
+  const { user: firebaseUser } = useAuth();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = useState<string | null>(null);
+
 
   useEffect(() => {
     // Simulate API call
@@ -32,19 +38,85 @@ export default function DashboardPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleDonate = (requestId: string) => {
-    // Mock marking request as fulfilled and updating user stats
+  const handleDonate = async (requestId: string) => {
+    if (!firebaseUser) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to perform this action.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const requestToFulfill = requests.find(req => req.id === requestId);
+    if (!requestToFulfill) return;
+
+    // Optimistically update UI
     setRequests(prevRequests =>
       prevRequests.map(req =>
         req.id === requestId ? { ...req, isFulfilled: true } : req
       )
     );
+    
     toast({
       title: "Donation Marked!",
       description: `Thank you for your commitment to help fulfill request ID: ${requestId}.`,
       variant: "default",
     });
-    // In a real app, this would also trigger an API call to update backend and user's donation stats.
+
+    setIsGeneratingCertificate(requestId);
+    toast({
+      title: "Generating Certificate...",
+      description: "Please wait while your donation certificate is being created.",
+    });
+
+    try {
+      const donorName = firebaseUser.displayName || firebaseUser.email || "Valued Donor";
+      const donationDate = new Date().toISOString();
+      const issuingOrganization = "Blood Donation App Services";
+      const donationId = `donation-${requestId}-${Date.now()}`;
+
+      const certificateResult = await generateCertificate({
+        donorName,
+        donationDate,
+        issuingOrganization,
+        donationId,
+      });
+
+      const newCertificate: Certificate = {
+        id: `cert-${donationId}`,
+        userId: firebaseUser.uid,
+        donationId: donationId, 
+        issueDate: donationDate,
+        certificateUrl: certificateResult.certificateDataUri,
+      };
+
+      // Store in localStorage
+      const existingCertsString = localStorage.getItem(`userCertificates_${firebaseUser.uid}`);
+      const existingCerts: Certificate[] = existingCertsString ? JSON.parse(existingCertsString) : [];
+      localStorage.setItem(`userCertificates_${firebaseUser.uid}`, JSON.stringify([...existingCerts, newCertificate]));
+      
+      toast({
+        title: "Certificate Generated!",
+        description: "Your donation certificate has been successfully created and saved.",
+      });
+
+    } catch (error) {
+      console.error("Failed to generate certificate:", error);
+      toast({
+        title: "Certificate Generation Failed",
+        description: `Could not generate certificate for donation ${requestId}. Please try again later or contact support. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+      // Optionally revert optimistic update if certificate generation is critical
+      // setRequests(prevRequests =>
+      //   prevRequests.map(req =>
+      //     req.id === requestId ? { ...req, isFulfilled: false } : req 
+      //   )
+      // );
+    } finally {
+      setIsGeneratingCertificate(null);
+    }
   };
   
   const pendingRequests = requests.filter(req => !req.isFulfilled);
@@ -62,7 +134,12 @@ export default function DashboardPage() {
       ) : pendingRequests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pendingRequests.map((request) => (
-            <DonationRequestCard key={request.id} request={request} onDonate={handleDonate} />
+            <DonationRequestCard 
+              key={request.id} 
+              request={request} 
+              onDonate={handleDonate}
+              isGeneratingCert={isGeneratingCertificate === request.id}
+            />
           ))}
         </div>
       ) : (
@@ -85,7 +162,12 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-headline font-semibold text-primary mt-12 mb-6">Fulfilled Requests</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {requests.filter(req => req.isFulfilled).map((request) => (
-              <DonationRequestCard key={request.id} request={request} onDonate={handleDonate} />
+              <DonationRequestCard 
+                key={request.id} 
+                request={request} 
+                onDonate={handleDonate} // Or a different handler for already fulfilled ones
+                isGeneratingCert={isGeneratingCertificate === request.id}
+              />
             ))}
           </div>
         </>
@@ -113,3 +195,4 @@ function CardSkeleton() {
     </div>
   );
 }
+

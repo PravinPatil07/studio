@@ -2,16 +2,17 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { BloodRequest } from "@/types";
-import { Droplet, MapPin, Phone, CalendarDays, CheckCircle, AlertCircle } from "lucide-react";
+import { Droplet, MapPin, Phone, CalendarDays, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
 interface DonationRequestCardProps {
   request: BloodRequest;
   onDonate: (requestId: string) => void;
+  isGeneratingCert?: boolean;
 }
 
-export function DonationRequestCard({ request, onDonate }: DonationRequestCardProps) {
+export function DonationRequestCard({ request, onDonate, isGeneratingCert }: DonationRequestCardProps) {
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
       <CardHeader>
@@ -53,8 +54,14 @@ export function DonationRequestCard({ request, onDonate }: DonationRequestCardPr
           <Button 
             className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" 
             onClick={() => onDonate(request.id)}
+            disabled={isGeneratingCert}
           >
-            <Heart className="mr-2 h-4 w-4" /> Mark as Donated / Fulfill
+            {isGeneratingCert ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Heart className="mr-2 h-4 w-4" />
+            )}
+            {isGeneratingCert ? "Processing..." : "Mark as Donated / Fulfill"}
           </Button>
         )}
       </CardFooter>
@@ -77,3 +84,4 @@ const Heart = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
+
