@@ -28,6 +28,8 @@ export function Sidebar() {
     await logout();
   };
 
+  const displayName = user?.displayName || user?.email;
+
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col fixed shadow-lg">
       <div className="p-6 border-b border-sidebar-border">
@@ -51,7 +53,7 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="p-4 border-t border-sidebar-border">
-        {user?.email && <p className="text-xs text-sidebar-foreground/70 mb-2 truncate" title={user.email}>Logged in as: {user.email}</p>}
+        {displayName && <p className="text-xs text-sidebar-foreground/70 mb-2 truncate" title={displayName}>Logged in as: {displayName}</p>}
         <Button
           variant="ghost"
           className="w-full justify-start space-x-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
