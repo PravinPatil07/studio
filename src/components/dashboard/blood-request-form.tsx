@@ -1,3 +1,4 @@
+
 // src/components/dashboard/blood-request-form.tsx
 "use client";
 
@@ -21,11 +22,12 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { bloodGroupsList, type BloodGroup } from "@/types";
+import { bloodGroupsList, urgencyLevels, type BloodGroup, type UrgencyLevel } from "@/types";
 
 const formSchema = z.object({
   requesterName: z.string().min(1, { message: "Your name is required." }),
   bloodGroup: z.enum(bloodGroupsList as [BloodGroup, ...BloodGroup[]], { required_error: "Blood group is required." }),
+  urgency: z.enum(urgencyLevels as [UrgencyLevel, ...UrgencyLevel[]], { required_error: "Urgency level is required." }),
   location: z.string().min(1, { message: "Location is required (e.g., City, Hospital Name)." }),
   dateNeeded: z.date({ required_error: "Date needed is required." }),
   contactNumber: z.string().min(10, { message: "Contact number must be at least 10 digits." }).regex(/^\+?[0-9\s-()]+$/, "Invalid phone number format."),
@@ -40,15 +42,16 @@ export function BloodRequestForm() {
       requesterName: "",
       location: "",
       contactNumber: "",
+      urgency: "Moderate", // Default urgency
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Mock submission: in a real app, call backend API to store in MongoDB
+    // Mock submission: in a real app, call backend API to store
     console.log("Blood request submitted (mock):", values);
     toast({
       title: "Request Submitted!",
-      description: `Your request for ${values.bloodGroup} blood has been posted.`,
+      description: `Your ${values.urgency.toLowerCase()} request for ${values.bloodGroup} blood has been posted.`,
       variant: "default"
     });
     form.reset(); // Reset form after submission
@@ -70,7 +73,7 @@ export function BloodRequestForm() {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="bloodGroup"
@@ -86,6 +89,28 @@ export function BloodRequestForm() {
                   <SelectContent>
                     {bloodGroupsList.map((group) => (
                       <SelectItem key={group} value={group}>{group}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="urgency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Urgency Level</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select urgency" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {urgencyLevels.map((level) => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -162,3 +187,4 @@ export function BloodRequestForm() {
     </Form>
   );
 }
+

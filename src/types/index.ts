@@ -1,3 +1,4 @@
+
 // src/types/index.ts
 
 export type User = {
@@ -13,6 +14,9 @@ export type User = {
   donationHistory?: Donation[];
 };
 
+export const urgencyLevels = ["Urgent", "Moderate", "Low"] as const;
+export type UrgencyLevel = typeof urgencyLevels[number];
+
 export type BloodRequest = {
   id: string;
   requesterName: string;
@@ -20,6 +24,7 @@ export type BloodRequest = {
   location: string; // Could be more structured, e.g., { city: string, state: string }
   dateNeeded: string; // ISO string format
   contactNumber: string;
+  urgency: UrgencyLevel;
   isFulfilled: boolean;
   createdAt: string; // ISO string format
   requestedByUserId?: string; 
@@ -64,3 +69,4 @@ export const bloodCompatibilityInfo: Record<BloodGroup, { canDonateTo: BloodGrou
   "O+": { canDonateTo: ["A+", "B+", "AB+", "O+"], canReceiveFrom: ["O+", "O-"] },
   "O-": { canDonateTo: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], canReceiveFrom: ["O-"] }, // Universal donor
 };
+

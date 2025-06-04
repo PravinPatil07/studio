@@ -1,10 +1,12 @@
+
 // src/components/dashboard/donation-request-card.tsx
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { BloodRequest } from "@/types";
-import { Droplet, MapPin, Phone, CalendarDays, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import type { BloodRequest, UrgencyLevel } from "@/types";
+import { Droplet, MapPin, Phone, CalendarDays, CheckCircle, AlertCircle, Loader2, AlertTriangle, Zap, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface DonationRequestCardProps {
   request: BloodRequest;
@@ -12,14 +14,39 @@ interface DonationRequestCardProps {
   isGeneratingCert?: boolean;
 }
 
+const UrgencyIndicator: React.FC<{ urgency: UrgencyLevel }> = ({ urgency }) => {
+  switch (urgency) {
+    case "Urgent":
+      return (
+        <Badge variant="destructive" className="bg-red-500 text-white">
+          <AlertTriangle className="mr-1 h-3 w-3" /> Urgent
+        </Badge>
+      );
+    case "Moderate":
+      return (
+        <Badge variant="secondary" className="bg-amber-500 text-white">
+          <Clock className="mr-1 h-3 w-3" /> Moderate
+        </Badge>
+      );
+    case "Low":
+      return (
+        <Badge variant="default" className="bg-green-500 text-white">
+          <Zap className="mr-1 h-3 w-3" /> Low
+        </Badge>
+      );
+    default:
+      return <Badge variant="outline">{urgency}</Badge>;
+  }
+};
+
 export function DonationRequestCard({ request, onDonate, isGeneratingCert }: DonationRequestCardProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
+    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col">
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start mb-1">
           <div>
             <CardTitle className="font-headline text-xl text-primary">{request.requesterName}</CardTitle>
-            <CardDescription>Needs <Badge variant="destructive" className="bg-primary text-primary-foreground">{request.bloodGroup}</Badge> blood</CardDescription>
+            <CardDescription>Needs <Badge variant="secondary" className="bg-primary/10 text-primary">{request.bloodGroup}</Badge> blood</CardDescription>
           </div>
           {request.isFulfilled ? (
             <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300">
@@ -31,18 +58,19 @@ export function DonationRequestCard({ request, onDonate, isGeneratingCert }: Don
             </Badge>
           )}
         </div>
+        <UrgencyIndicator urgency={request.urgency} />
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex-grow">
         <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4 mr-2 text-accent" />
+          <MapPin className="h-4 w-4 mr-2 text-accent flex-shrink-0" />
           <span>{request.location}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
-          <CalendarDays className="h-4 w-4 mr-2 text-accent" />
+          <CalendarDays className="h-4 w-4 mr-2 text-accent flex-shrink-0" />
           <span>Needed by: {format(new Date(request.dateNeeded), "PPP")}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
-          <Phone className="h-4 w-4 mr-2 text-accent" />
+          <Phone className="h-4 w-4 mr-2 text-accent flex-shrink-0" />
           <span>{request.contactNumber}</span>
         </div>
          <div className="flex items-center text-xs text-muted-foreground/80 pt-1">

@@ -1,4 +1,5 @@
 
+
 // src/app/(app)/dashboard/page.tsx
 "use client";
 
@@ -15,10 +16,10 @@ import { useAuth } from "@/hooks/use-auth-client";
 import { generateCertificate } from "@/ai/flows/generate-certificate-flow";
 
 const mockRequests: BloodRequest[] = [
-  { id: "1", requesterName: "Alice Smith", bloodGroup: "A+", location: "Springfield, IL", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "2", requesterName: "Bob Johnson", bloodGroup: "O-", location: "Shelbyville, IL", dateNeeded: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-5678", isFulfilled: false, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "3", requesterName: "Carol Williams", bloodGroup: "B+", location: "Capital City, IL", dateNeeded: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-9012", isFulfilled: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "4", requesterName: "David Brown", bloodGroup: "AB+", location: "Ogdenville, IL", dateNeeded: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-3456", isFulfilled: false, createdAt: new Date().toISOString() },
+  { id: "1", requesterName: "Alice Smith", bloodGroup: "A+", location: "Springfield, IL", dateNeeded: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-1234", urgency: "Urgent", isFulfilled: false, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "2", requesterName: "Bob Johnson", bloodGroup: "O-", location: "Shelbyville, IL", dateNeeded: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-5678", urgency: "Moderate", isFulfilled: false, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "3", requesterName: "Carol Williams", bloodGroup: "B+", location: "Capital City, IL", dateNeeded: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-9012", urgency: "Low", isFulfilled: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "4", requesterName: "David Brown", bloodGroup: "AB+", location: "Ogdenville, IL", dateNeeded: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), contactNumber: "555-3456", urgency: "Moderate", isFulfilled: false, createdAt: new Date().toISOString() },
 ];
 
 export default function DashboardPage() {
@@ -186,6 +187,7 @@ function CardSkeleton() {
         </div>
         <Skeleton className="h-6 w-20" />
       </div>
+      <Skeleton className="h-5 w-24 mb-3" /> 
       <div className="space-y-3 mb-4">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
@@ -195,4 +197,5 @@ function CardSkeleton() {
     </div>
   );
 }
+
 
