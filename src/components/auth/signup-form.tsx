@@ -29,14 +29,13 @@ import { AlertTriangle } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
-
-const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+import { bloodGroupsList, type BloodGroup } from "@/types"; // Updated import
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   firstName: z.string().min(1, { message: "First name is required." }),
   lastName: z.string().min(1, { message: "Last name is required." }),
-  bloodGroup: z.enum(bloodGroups as [string, ...string[]], { required_error: "Blood group is required." }),
+  bloodGroup: z.enum(bloodGroupsList as [BloodGroup, ...BloodGroup[]], { required_error: "Blood group is required." }),
   age: z.coerce.number().min(18, { message: "Must be at least 18 years old." }).max(100),
   dateOfBirth: z.date({ required_error: "Date of birth is required." }),
   address: z.string().min(1, { message: "Address is required." }),
@@ -59,6 +58,9 @@ export function SignupForm() {
       email: "",
       firstName: "",
       lastName: "",
+      bloodGroup: undefined,
+      age: undefined,
+      dateOfBirth: undefined,
       address: "",
       contactNumber: "",
       password: "",
@@ -67,15 +69,13 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("SignupForm onSubmit triggered with values:", values); // For debugging
+    console.log("SignupForm onSubmit triggered with values:", values); 
     setError(null);
     setIsLoading(true);
     try {
-      // Additional user profile data (firstName, lastName, etc.) would need to be saved 
-      // separately (e.g., to Firestore or Realtime Database) after successful user creation.
-      // This example only handles auth creation.
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       // AuthProvider's onAuthStateChanged will handle redirect.
+      // Additional profile data saving (to Firestore/RTDB) would go here.
     } catch (err: any) {
       console.error("Signup error:", err);
       if (err.code === 'auth/email-already-in-use') {
@@ -155,14 +155,14 @@ export function SignupForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Blood Group</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select blood group" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {bloodGroups.map((group) => (
+                        {bloodGroupsList.map((group) => (
                           <SelectItem key={group} value={group}>{group}</SelectItem>
                         ))}
                       </SelectContent>
