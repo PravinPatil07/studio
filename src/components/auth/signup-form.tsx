@@ -77,13 +77,13 @@ export function SignupForm() {
       // AuthProvider's onAuthStateChanged will handle redirect.
       // Additional profile data saving (to Firestore/RTDB) would go here.
     } catch (err: any) {
-      console.error("Signup error:", err);
       if (err.code === 'auth/email-already-in-use') {
         setError("This email is already registered. Please log in or use a different email.");
       } else if (err.code === 'auth/weak-password') {
         setError("The password is too weak. Please choose a stronger password.");
       }
       else {
+        console.error("Unexpected signup error:", err); // Log only unexpected errors to console
         setError("An unexpected error occurred during sign up. Please try again.");
       }
     } finally {
@@ -287,3 +287,4 @@ export function SignupForm() {
     </Card>
   );
 }
+
