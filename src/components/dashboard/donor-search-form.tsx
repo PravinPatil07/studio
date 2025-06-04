@@ -15,27 +15,34 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { bloodGroupsList, type BloodGroup, type DonorSearchResult } from "@/types";
+import { bloodGroupsList, type BloodGroup } from "@/types";
 import { SearchIcon } from "lucide-react";
 
+// Define a unique, non-empty string for the "Any Blood Group" option
+export const ANY_BLOOD_GROUP_VALUE = "__ANY_BLOOD_GROUP__" as const;
+const extendedBloodGroupsList = [...bloodGroupsList, ANY_BLOOD_GROUP_VALUE] as const;
+
 const formSchema = z.object({
-  bloodGroup: z.enum(bloodGroupsList as [BloodGroup, ...BloodGroup[]]).optional(),
+  bloodGroup: z.enum(extendedBloodGroupsList).optional(),
   city: z.string().optional(),
 });
 
+export type DonorSearchFormValues = z.infer<typeof formSchema>;
+
 interface DonorSearchFormProps {
-  onSearch: (filters: z.infer<typeof formSchema>) => void;
+  onSearch: (filters: DonorSearchFormValues) => void;
 }
 
 export function DonorSearchForm({ onSearch }: DonorSearchFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<DonorSearchFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       city: "",
+      bloodGroup: undefined, // Initial value is undefined, placeholder will show
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: DonorSearchFormValues) {
     onSearch(values);
   }
 
@@ -48,14 +55,14 @@ export function DonorSearchForm({ onSearch }: DonorSearchFormProps) {
           render={({ field }) => (
             <FormItem className="flex-1">
               <FormLabel>Blood Group</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Any Blood Group" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Any Blood Group</SelectItem>
+                  <SelectItem value={ANY_BLOOD_GROUP_VALUE}>Any Blood Group</SelectItem>
                   {bloodGroupsList.map((group) => (
                     <SelectItem key={group} value={group}>{group}</SelectItem>
                   ))}

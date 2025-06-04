@@ -3,34 +3,30 @@
 
 import { useState, useEffect } from "react";
 import { DonorCard } from "@/components/dashboard/donor-card";
-import { DonorSearchForm } from "@/components/dashboard/donor-search-form";
+import { DonorSearchForm, ANY_BLOOD_GROUP_VALUE, type DonorSearchFormValues } from "@/components/dashboard/donor-search-form";
 import { PageHeader } from "@/components/layout/page-header";
 import type { DonorSearchResult, BloodGroup } from "@/types";
-import { Search, Users, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const mockDonors: DonorSearchResult[] = [
   { id: "d1", name: "Arjun Kumar", bloodGroup: "A+", city: "Mumbai", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "d2", name: "Sneha Reddy", bloodGroup: "O-", city: "Delhi", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "d3", name: "Mohan Gupta", bloodGroup: "B+", city: "Mumbai", contactInfo: "Available" },
-  { id: "d4", name: "Lakshmi Iyer", bloodGroup: "AB+", city: "Bangalore", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
-  { id: "d5", name: "Ravi Shankar", bloodGroup: "A-", city: "Mumbai", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d2", name: "Priya Sharma", bloodGroup: "O-", city: "Delhi", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d3", name: "Rohan Mehra", bloodGroup: "B+", city: "Mumbai", contactInfo: "Available" },
+  { id: "d4", name: "Aisha Khan", bloodGroup: "AB+", city: "Bangalore", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: "d5", name: "Vikram Singh", bloodGroup: "A-", city: "Mumbai", contactInfo: "Available", lastDonationDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString() },
 ];
 
-interface SearchFilters {
-  bloodGroup?: BloodGroup | "";
-  city?: string;
-}
 
 export default function FindDonorPage() {
-  const [donors, setDonors] = useState<DonorSearchResult[]>([]);
+  const [donors, setDonors] = useState<DonorSearchResult[]>([]); // This state isn't actively used for filtering, mockDonors is used as base
   const [filteredDonors, setFilteredDonors] = useState<DonorSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
  useEffect(() => {
     // Simulate API call to fetch initial set of donors
     const timer = setTimeout(() => {
-      setDonors(mockDonors);
+      setDonors(mockDonors); // Set the base donors (though filtering happens on mockDonors directly)
       setFilteredDonors(mockDonors); // Initially show all donors
       setIsLoading(false);
     }, 1000);
@@ -38,15 +34,16 @@ export default function FindDonorPage() {
   }, []);
 
 
-  const handleSearch = (filters: SearchFilters) => {
+  const handleSearch = (filters: DonorSearchFormValues) => {
     setIsLoading(true);
     // Simulate filtering
     setTimeout(() => {
       let result = mockDonors;
-      if (filters.bloodGroup) {
+      // Filter by blood group only if a specific group is selected (not ANY_BLOOD_GROUP_VALUE and not undefined)
+      if (filters.bloodGroup && filters.bloodGroup !== ANY_BLOOD_GROUP_VALUE) {
         result = result.filter(donor => donor.bloodGroup === filters.bloodGroup);
       }
-      if (filters.city) {
+      if (filters.city && filters.city.trim() !== "") {
         result = result.filter(donor => donor.city.toLowerCase().includes(filters.city!.toLowerCase()));
       }
       setFilteredDonors(result);
@@ -105,3 +102,4 @@ function DonorCardSkeleton() {
     </div>
   );
 }
+
