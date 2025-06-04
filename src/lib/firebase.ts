@@ -2,6 +2,15 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
+// Log a warning if the API key is not set
+if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+  console.warn(
+    'Firebase API Key (NEXT_PUBLIC_FIREBASE_API_KEY) is not set in your environment variables. ' +
+    'This will cause Firebase initialization to fail. ' +
+    'Please ensure it is correctly set in your .env file and the server has been restarted.'
+  );
+}
+
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
