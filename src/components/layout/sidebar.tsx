@@ -1,3 +1,4 @@
+
 // src/components/layout/sidebar.tsx
 "use client";
 
@@ -21,7 +22,11 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { logout, userEmail } = useAuth();
+  const { logout, user } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col fixed shadow-lg">
@@ -46,11 +51,11 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="p-4 border-t border-sidebar-border">
-        {userEmail && <p className="text-xs text-sidebar-foreground/70 mb-2 truncate">Logged in as: {userEmail}</p>}
+        {user?.email && <p className="text-xs text-sidebar-foreground/70 mb-2 truncate" title={user.email}>Logged in as: {user.email}</p>}
         <Button
           variant="ghost"
           className="w-full justify-start space-x-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={logout}
+          onClick={handleLogout}
         >
           <LogOut className="h-5 w-5" />
           <span>Logout</span>

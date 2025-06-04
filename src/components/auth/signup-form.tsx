@@ -1,3 +1,4 @@
+
 // src/components/auth/signup-form.tsx
 "use client";
 
@@ -22,10 +23,12 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { useAuth } from "@/hooks/use-auth-client";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -46,8 +49,9 @@ const formSchema = z.object({
 });
 
 export function SignupForm() {
-  const { login } = useAuth(); // Use login to transition after successful signup
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,16 +66,28 @@ export function SignupForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Mock signup: in a real app, call backend API
-    // For demo, any signup "works" unless email is "duplicate@example.com"
-    if (values.email === "duplicate@example.com") {
-      setError("This email is already registered. Please log in or use a different email.");
-      // In a real app, you might redirect to login here: router.push('/auth/login');
-    } else {
-      setError(null);
-      console.log("Signup successful (mock):", values);
-      login(values.email); // Log in the user with their email after successful signup
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setError(null);
+    setIsLoading(true);
+    try {
+      // Additional user profile data (firstName, lastName, etc.) would need to be saved 
+      // separately (e.g., to Firestore or Realtime Database) after successful user creation.
+      // This example only handles auth creation.
+      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      // AuthProvider's onAuthStateChanged will handle redirect.
+      // router.push('/dashboard'); // Explicit redirect is also an option
+    } catch (err: any) {
+      console.error("Signup error:", err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError("This email is already registered. Please log in or use a different email.");
+      } else if (err.code === 'auth/weak-password') {
+        setError("The password is too weak. Please choose a stronger password.");
+      }
+      else {
+        setError("An unexpected error occurred during sign up. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -126,7 +142,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} />
+                    <Input placeholder="you@example.com" {...field} type="email"/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -256,8 +272,8 @@ export function SignupForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-              Sign Up
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
+              {isLoading ? "Signing up..." : "Sign Up"}
             </Button>
           </form>
         </Form>

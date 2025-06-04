@@ -1,3 +1,4 @@
+
 // src/components/auth/login-form.tsx
 "use client";
 
@@ -16,10 +17,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { useAuth } from "@/hooks/use-auth-client";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -27,8 +30,9 @@ const formSchema = z.object({
 });
 
 export function LoginForm() {
-  const { login } = useAuth();
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,16 +42,22 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Mock login: in a real app, call backend API
-    // For demo, any credentials "work" unless it's a specific test user
-    if (values.email === "test@example.com" && values.password === "password") {
-      login(values.email);
-    } else if (values.email !== "fail@example.com") { // Allow any other email to "succeed"
-      login(values.email);
-    }
-    else {
-      setError("Invalid email or password. Please try again.");
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // AuthProvider's onAuthStateChanged will handle redirect.
+      // router.push('/dashboard'); // Explicit redirect is also an option
+    } catch (err: any) {
+      console.error("Login error:", err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
+        setError("Invalid email or password. Please try again.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -74,7 +84,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="you@example.com" {...field} />
+                    <Input placeholder="you@example.com" {...field} type="email" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -93,8 +103,8 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-              Log In
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Log In"}
             </Button>
           </form>
         </Form>

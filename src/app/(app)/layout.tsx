@@ -1,3 +1,4 @@
+
 // src/app/(app)/layout.tsx
 "use client"; 
 
@@ -12,14 +13,14 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !user) {
       router.push("/auth/login");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -35,7 +36,7 @@ export default function AppLayout({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
      // This will be briefly shown before redirect effect kicks in
     return (
        <div className="flex h-screen w-screen items-center justify-center bg-background">

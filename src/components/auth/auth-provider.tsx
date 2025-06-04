@@ -1,16 +1,17 @@
+
 // src/components/auth/auth-provider.tsx
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User as FirebaseUser, signOut as firebaseSignOut } from 'firebase/auth';
 
 export interface AuthContextType {
   isAuthenticated: boolean;
-  login: (email?: string) // Accept email for potential future use (e.g. display in profile)
-    => void;
-  logout: () => void;
+  user: FirebaseUser | null;
   isLoading: boolean;
-  userEmail: string | null;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,60 +21,51 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check localStorage for persisted auth state
-    try {
-      const storedAuth = localStorage.getItem('isAuthenticated');
-      const storedEmail = localStorage.getItem('userEmail');
-      if (storedAuth === 'true') {
-        setIsAuthenticated(true);
-        if (storedEmail) setUserEmail(storedEmail);
-      }
-    } catch (error) {
-      // localStorage is not available or other error
-      console.warn("Could not access localStorage for auth state:", error);
-    }
-    setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setIsLoading(false);
+    });
+    return () => unsubscribe(); // Cleanup subscription
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && pathname.startsWith('/dashboard')) {
+    if (!isLoading && !user && pathname.startsWith('/dashboard')) {
       router.push('/auth/login');
     }
-  }, [isAuthenticated, isLoading, pathname, router]);
-
-  const login = (email?: string) => {
-    setIsAuthenticated(true);
-    if (email) setUserEmail(email);
-    try {
-      localStorage.setItem('isAuthenticated', 'true');
-      if (email) localStorage.setItem('userEmail', email);
-    } catch (error) {
-      console.warn("Could not access localStorage for auth state:", error);
+    if (!isLoading && user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
+      router.push('/dashboard');
     }
-    router.push('/dashboard');
+  }, [user, isLoading, pathname, router]);
+
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await firebaseSignOut(auth);
+      setUser(null); 
+      router.push('/auth/login');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      // Optionally show a toast message for logout error
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUserEmail(null);
-    try {
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('userEmail');
-    } catch (error) {
-      console.warn("Could not access localStorage for auth state:", error);
-    }
-    router.push('/auth/login');
+  
+  const contextValue: AuthContextType = {
+    isAuthenticated: !!user,
+    user,
+    isLoading,
+    logout,
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, isLoading, userEmail }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
