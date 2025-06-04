@@ -26,8 +26,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase"; // Import db
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore"; // Import Firestore functions
 import { useRouter } from "next/navigation";
 import { bloodGroupsList, type BloodGroup, type User as AppUserType } from "@/types"; 
 import { useToast } from "@/hooks/use-toast";
@@ -72,20 +73,18 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("SignupForm onSubmit triggered with values:", values); 
     setError(null);
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
-      // Set display name on Firebase user
       await updateProfile(firebaseUser, {
         displayName: `${values.firstName} ${values.lastName}`
       });
 
-      // Prepare profile data for localStorage
-      const userProfileData: Omit<AppUserType, 'id' | 'donationHistory'> = {
+      const userProfileData: AppUserType = {
+        id: firebaseUser.uid,
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
@@ -94,10 +93,11 @@ export function SignupForm() {
         dateOfBirth: values.dateOfBirth.toISOString(),
         address: values.address,
         contactNumber: values.contactNumber,
+        donationHistory: [], // Initialize donation history
       };
 
-      // Save profile data to localStorage
-      localStorage.setItem(`userProfile_${firebaseUser.uid}`, JSON.stringify(userProfileData));
+      // Save profile data to Firestore
+      await setDoc(doc(db, "users", firebaseUser.uid), userProfileData);
       
       toast({
         title: "Account Created!",
@@ -110,6 +110,9 @@ export function SignupForm() {
         setError("This email is already registered. Please log in or use a different email.");
       } else if (err.code === 'auth/weak-password') {
         setError("The password is too weak. Please choose a stronger password.");
+      } else if (err.code === 'firestore/permission-denied') {
+        setError("Could not save profile information. Please check Firestore rules.");
+        console.error("Firestore permission error during signup:", err);
       }
       else {
         console.error("Unexpected signup error:", err); 

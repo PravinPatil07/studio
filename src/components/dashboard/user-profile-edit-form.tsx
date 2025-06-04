@@ -23,8 +23,9 @@ import { format, differenceInYears } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { bloodGroupsList, type BloodGroup, type User as AppUserType } from "@/types";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase"; // Import db
 import { updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore"; // Import Firestore functions
 import { useState } from "react";
 
 const editProfileFormSchema = z.object({
@@ -54,8 +55,8 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
     defaultValues: {
       firstName: currentUserData.firstName,
       lastName: currentUserData.lastName,
-      bloodGroup: currentUserData.bloodGroup as BloodGroup,
-      dateOfBirth: new Date(currentUserData.dateOfBirth),
+      bloodGroup: currentUserData.bloodGroup as BloodGroup, // Cast if necessary, ensure it's a valid BloodGroup
+      dateOfBirth: currentUserData.dateOfBirth ? new Date(currentUserData.dateOfBirth) : new Date(),
       address: currentUserData.address,
       contactNumber: currentUserData.contactNumber,
     },
@@ -69,15 +70,16 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
     setIsLoading(true);
 
     try {
-      // Update Firebase display name
-      await updateProfile(firebaseUser, {
-        displayName: `${values.firstName} ${values.lastName}`
-      });
+      // Update Firebase Auth display name (optional, but good for consistency)
+      if (firebaseUser.displayName !== `${values.firstName} ${values.lastName}`) {
+        await updateProfile(firebaseUser, {
+          displayName: `${values.firstName} ${values.lastName}`
+        });
+      }
 
-      // Prepare data for localStorage and callback
       const age = differenceInYears(new Date(), values.dateOfBirth);
-      const updatedUserData: AppUserType = {
-        ...currentUserData, // Preserve ID and other fields like email
+      const updatedFirestoreData: AppUserType = {
+        ...currentUserData, // Preserve existing fields like id, email, donationHistory
         firstName: values.firstName,
         lastName: values.lastName,
         bloodGroup: values.bloodGroup,
@@ -85,17 +87,22 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
         age: age,
         address: values.address,
         contactNumber: values.contactNumber,
-        // email is not editable here, so it's taken from currentUserData
       };
       
-      localStorage.setItem(`userProfile_${firebaseUser.uid}`, JSON.stringify(updatedUserData));
+      // Save/Update profile data in Firestore
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      await setDoc(userDocRef, updatedFirestoreData, { merge: true }); // Use merge to prevent overwriting if doc exists
       
-      onSave(updatedUserData); // Pass updated data to parent
-      toast({ title: "Profile Updated", description: "Your profile has been successfully updated." });
+      onSave(updatedFirestoreData); // Pass updated data to parent to update local state
+      toast({ title: "Profile Updated", description: "Your profile has been successfully updated in Firestore." });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast({ title: "Update Failed", description: "Could not update your profile. Please try again.", variant: "destructive" });
+      let errorMessage = "Could not update your profile. Please try again.";
+      if (error.code === 'firestore/permission-denied') {
+        errorMessage = "Permission denied when trying to save profile. Please check Firestore rules.";
+      }
+      toast({ title: "Update Failed", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -235,3 +242,4 @@ export function UserProfileEditForm({ currentUserData, onSave, onCancel }: UserP
     </Form>
   );
 }
+

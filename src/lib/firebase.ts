@@ -1,6 +1,7 @@
 
 import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -18,10 +19,11 @@ if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
 
 // Log a portion of the key and the project ID being used for diagnostics
 // This will only run if the above check passes (i.e., apiKey is a non-empty string)
-const apiKeyPreview = apiKey.length >= 10 ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}` : 'API key (too short for preview)';
 console.log(`Attempting to initialize Firebase with (from src/lib/firebase.ts):`);
 console.log(`  Project ID: ${projectId || 'NOT SET (Check NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env)'}`);
+const apiKeyPreview = apiKey.length >= 10 ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}` : 'API key (too short for preview)';
 console.log(`  API Key (Preview): ${apiKeyPreview}`);
+
 
 if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
     console.warn('WARNING: Firebase Project ID (NEXT_PUBLIC_FIREBASE_PROJECT_ID) is missing or empty in your .env file. This might also cause issues.');
@@ -51,6 +53,8 @@ if (!getApps().length) {
   app = getApp();
 }
 
-const auth = getAuth(app); // This will now only be reached if `apiKey` was a non-empty string
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-export { app, auth };
+export { app, auth, db };
+

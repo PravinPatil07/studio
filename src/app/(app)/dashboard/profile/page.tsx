@@ -10,78 +10,99 @@ import type { User as AppUserType } from "@/types";
 import { UserCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const [profileData, setProfileData] = useState<AppUserType | null>(null);
   const { user: firebaseUser, isLoading: authIsLoading } = useAuth();
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!authIsLoading && firebaseUser) {
+    if (authIsLoading) {
+      setIsProfileLoading(true);
+      return;
+    }
+
+    if (!firebaseUser) {
+      setProfileData(null);
+      setIsProfileLoading(false);
+      return;
+    }
+
+    const fetchProfile = async () => {
+      setIsProfileLoading(true);
+      setProfileError(null);
       try {
-        const storedProfileString = localStorage.getItem(`userProfile_${firebaseUser.uid}`);
-        if (storedProfileString) {
-          const storedProfile = JSON.parse(storedProfileString);
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          setProfileData(userDocSnap.data() as AppUserType);
+        } else {
+          // Document doesn't exist, create a default profile structure to be saved later
+          const defaultFirstName = firebaseUser.displayName?.split(' ')[0] || "User";
+          const defaultLastName = firebaseUser.displayName?.split(' ')[1] || "";
+          
           setProfileData({
             id: firebaseUser.uid,
-            email: firebaseUser.email || "No email provided", 
-            firstName: storedProfile.firstName || firebaseUser.displayName?.split(' ')[0] || "User",
-            lastName: storedProfile.lastName || firebaseUser.displayName?.split(' ')[1] || "",
-            bloodGroup: storedProfile.bloodGroup || "N/A",
-            age: storedProfile.age || 0,
-            dateOfBirth: storedProfile.dateOfBirth || new Date(1900,0,1).toISOString(),
-            address: storedProfile.address || "No address provided",
-            contactNumber: storedProfile.contactNumber || "No contact provided",
-            donationHistory: storedProfile.donationHistory || [],
-          });
-        } else {
-           setProfileData({
-            id: firebaseUser.uid,
             email: firebaseUser.email || "No email provided",
-            firstName: firebaseUser.displayName?.split(' ')[0] || "Donor",
-            lastName: firebaseUser.displayName?.split(' ')[1] || "User",
-            bloodGroup: "N/A",
-            age: 0,
-            dateOfBirth: new Date(1900,0,1).toISOString(),
-            address: "Address not set",
-            contactNumber: "Contact not set",
-            donationHistory: []
+            firstName: defaultFirstName,
+            lastName: defaultLastName,
+            bloodGroup: "N/A", // Default, user should update
+            age: 0, // Default, user should update (or derived from DOB)
+            dateOfBirth: new Date(1990,0,1).toISOString(), // Default DOB
+            address: "No address provided",
+            contactNumber: "No contact provided",
+            donationHistory: [],
           });
-          setProfileError("Some profile details might be missing or were not previously saved. Please edit and save your profile.");
+          setProfileError("Your profile is not fully set up. Please complete and save it.");
         }
       } catch (error) {
-        console.error("Error loading profile from localStorage:", error);
-        setProfileError("Could not load all profile details. Displaying available information.");
+        console.error("Error fetching profile from Firestore:", error);
+        setProfileError("Could not load profile details. Please try again or contact support.");
+        // Fallback to basic info from auth if Firestore fails
         setProfileData({
-          id: firebaseUser.uid,
-          email: firebaseUser.email || "Error loading email",
-          firstName: firebaseUser.displayName?.split(' ')[0] || "Error",
-          lastName: firebaseUser.displayName?.split(' ')[1] || "Loading",
-          bloodGroup: "Error",
-          age: 0,
-          dateOfBirth: new Date().toISOString(),
-          address: "Error loading address",
-          contactNumber: "Error loading contact",
-          donationHistory: [],
-        });
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "Error loading email",
+            firstName: firebaseUser.displayName?.split(' ')[0] || "Error",
+            lastName: firebaseUser.displayName?.split(' ')[1] || "Loading",
+            bloodGroup: "Error",
+            age: 0,
+            dateOfBirth: new Date().toISOString(),
+            address: "Error loading address",
+            contactNumber: "Error loading contact",
+            donationHistory: [],
+          });
+      } finally {
+        setIsProfileLoading(false);
       }
-    } else if (!authIsLoading && !firebaseUser) {
-      setProfileData(null); 
-      setProfileError(null);
-    }
+    };
+
+    fetchProfile();
   }, [firebaseUser, authIsLoading]);
 
   const handleEdit = () => setIsEditing(true);
   
   const handleSave = (updatedData: AppUserType) => {
+    // Firestore saving is now handled by UserProfileEditForm
+    // This callback is mainly for updating the local state to refresh UI
     setProfileData(updatedData);
     setIsEditing(false);
+    setProfileError(null); // Clear any "profile not fully set up" error
   };
   
-  const handleCancel = () => setIsEditing(false);
+  const handleCancel = () => {
+    setIsEditing(false);
+    // Optionally, re-fetch from Firestore if changes were discarded to ensure consistency
+    // but for now, just toggle edit mode. The displayed data will be `profileData`.
+  };
 
-  if (authIsLoading || (firebaseUser && !profileData && !profileError)) {
+  if (authIsLoading || isProfileLoading) {
     // Skeleton loading state
     return (
       <div>
@@ -164,7 +185,8 @@ export default function ProfilePage() {
   );
 }
 
-// Dummy Card components used by Skeleton, ensure they exist or are styled if not using shadcn full
+// Dummy Card components used by Skeleton
 const Card = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`bg-card text-card-foreground border rounded-lg ${className}`}>{children}</div>;
 const CardHeader = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`p-6 ${className}`}>{children}</div>;
 const CardContent = ({className, children}: {className?: string, children: React.ReactNode}) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+
