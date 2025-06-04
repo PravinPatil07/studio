@@ -27,9 +27,11 @@ import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { auth } from "@/lib/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { bloodGroupsList, type BloodGroup } from "@/types"; // Updated import
+import { bloodGroupsList, type BloodGroup, type User as AppUserType } from "@/types"; 
+import { useToast } from "@/hooks/use-toast";
+
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -49,6 +51,7 @@ const formSchema = z.object({
 
 export function SignupForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,8 +61,8 @@ export function SignupForm() {
       email: "",
       firstName: "",
       lastName: "",
-      bloodGroup: undefined,
-      age: undefined,
+      bloodGroup: undefined, 
+      age: undefined, 
       dateOfBirth: undefined,
       address: "",
       contactNumber: "",
@@ -73,9 +76,35 @@ export function SignupForm() {
     setError(null);
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
+
+      // Set display name on Firebase user
+      await updateProfile(firebaseUser, {
+        displayName: `${values.firstName} ${values.lastName}`
+      });
+
+      // Prepare profile data for localStorage
+      const userProfileData: Omit<AppUserType, 'id' | 'donationHistory'> = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        bloodGroup: values.bloodGroup,
+        age: values.age,
+        dateOfBirth: values.dateOfBirth.toISOString(),
+        address: values.address,
+        contactNumber: values.contactNumber,
+      };
+
+      // Save profile data to localStorage
+      localStorage.setItem(`userProfile_${firebaseUser.uid}`, JSON.stringify(userProfileData));
+      
+      toast({
+        title: "Account Created!",
+        description: "Your account has been successfully created. Redirecting to dashboard...",
+      });
       // AuthProvider's onAuthStateChanged will handle redirect.
-      // Additional profile data saving (to Firestore/RTDB) would go here.
+      
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError("This email is already registered. Please log in or use a different email.");
@@ -83,7 +112,7 @@ export function SignupForm() {
         setError("The password is too weak. Please choose a stronger password.");
       }
       else {
-        console.error("Unexpected signup error:", err); // Log only unexpected errors to console
+        console.error("Unexpected signup error:", err); 
         setError("An unexpected error occurred during sign up. Please try again.");
       }
     } finally {
